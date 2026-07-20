@@ -25,6 +25,7 @@ from auth_api.models.dataclass import Activity
 from auth_api.models.db import db
 from auth_api.services.activity_log_publisher import ActivityLogPublisher
 from auth_api.utils.enums import ActivityAction, LinkingKeyStatus
+from auth_api.utils.fga_publisher import publish_linking_key_activated, publish_linking_key_revoked
 
 
 class AccountLinkingKey:
@@ -56,6 +57,8 @@ class AccountLinkingKey:
         record.save()
 
         AccountLinkingKey._publish(ActivityAction.LINKING_KEY_GENERATED.value, record)
+        if status == LinkingKeyStatus.ACTIVE.value:
+            publish_linking_key_activated(record.account_id, record.vendor_account_id)
         return record
 
     @staticmethod
@@ -69,9 +72,12 @@ class AccountLinkingKey:
         record = AccountLinkingKeyModel.find_by_id(key_id, account_id)
         if not record:
             return False
+        was_active = record.status == LinkingKeyStatus.ACTIVE.value
         record.status = LinkingKeyStatus.REVOKED.value
         record.save()
         AccountLinkingKey._publish(ActivityAction.LINKING_KEY_REVOKED.value, record)
+        if was_active:
+            publish_linking_key_revoked(record.account_id, record.vendor_account_id)
         return True
 
     @staticmethod
@@ -113,6 +119,7 @@ class AccountLinkingKey:
         record.save()
 
         AccountLinkingKey._publish(ActivityAction.LINKING_KEY_BOUND.value, record)
+        publish_linking_key_activated(record.account_id, record.vendor_account_id)
         return record
 
     # -- private helpers --
@@ -121,8 +128,11 @@ class AccountLinkingKey:
     def _revoke_superseded(record: AccountLinkingKeyModel | None) -> None:
         """Mark a superseded key REVOKED and flush it within the current transaction."""
         if record:
+            was_active = record.status == LinkingKeyStatus.ACTIVE.value
             record.status = LinkingKeyStatus.REVOKED.value
             db.session.flush()
+            if was_active:
+                publish_linking_key_revoked(record.account_id, record.vendor_account_id)
 
     @staticmethod
     def _vendor_label(record: AccountLinkingKeyModel) -> str | None:

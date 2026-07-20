@@ -35,6 +35,50 @@ services:
       - "6831:6831/udp"
       - "6832:6832/udp"
 
+  #################### OpenFGA Datastore ####################
+  openfga-db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_DB: openfga
+      POSTGRES_USER: openfga
+      POSTGRES_PASSWORD: openfga
+    ports:
+      - "54340:5432"
+    volumes:
+      - openfga-db-data:/var/lib/postgresql/data
+
+  #################### OpenFGA Migrations (runs once) ####################
+  openfga-migrate:
+    image: openfga/openfga:latest
+    depends_on:
+      - openfga-db
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://openfga:openfga@openfga-db:5432/openfga?sslmode=disable
+    command: migrate
+    restart: on-failure
+
+  #################### OpenFGA Server ####################
+  openfga:
+    image: openfga/openfga:latest
+    depends_on:
+      openfga-migrate:
+        condition: service_completed_successfully
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://openfga:openfga@openfga-db:5432/openfga?sslmode=disable
+      OPENFGA_LOG_FORMAT: json
+      OPENFGA_PLAYGROUND_ENABLED: "true"
+    ports:
+      - "8081:8080"   # HTTP API (auth-api uses 8080 locally)
+      - "8082:8081"   # gRPC
+      - "3000:3000"   # Playground UI
+    command: run
+    restart: always
+
 volumes:
   db-data:
+    driver: local
+  openfga-db-data:
     driver: local

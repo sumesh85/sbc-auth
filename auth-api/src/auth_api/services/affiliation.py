@@ -44,6 +44,7 @@ from auth_api.services.org import Org as OrgService
 from auth_api.services.user import User as UserService
 from auth_api.utils.account_mailer import publish_to_mailer
 from auth_api.utils.auth_event_publisher import publish_affiliation_event
+from auth_api.utils.fga_publisher import publish_affiliation_created, publish_affiliation_removed
 from auth_api.utils.enums import ActivityAction, CorpType, NRActionCodes, NRNameStatus, NRStatus, QueueMessageType
 from auth_api.utils.passcode import validate_passcode
 from auth_api.utils.roles import AFFILIATION_ALLOWED_ROLES, ALL_ALLOWED_ROLES, CLIENT_AUTH_ROLES, STAFF, Role
@@ -189,6 +190,7 @@ class Affiliation:
 
         affiliation = AffiliationModel(org_id=org_id, entity_id=entity_id, certified_by_name=certified_by_name)
         affiliation.save()
+        publish_affiliation_created(org_id, business_identifier)
 
         if entity_type not in ["SP", "GP"]:
             entity.set_pass_code_claimed(True)
@@ -304,7 +306,10 @@ class Affiliation:
                     )
                 )
         affiliation_model.certified_by_name = certified_by_name
+        is_new_affiliation = affiliation_model.id is None
         affiliation_model.save()
+        if is_new_affiliation:
+            publish_affiliation_created(org_id, entity.business_identifier)
         entity.set_pass_code_claimed(True)
 
         return Affiliation(affiliation_model)
@@ -425,6 +430,7 @@ class Affiliation:
         if da.reset_passcode:
             entity.reset_passcode(entity.business_identifier, da.email_addresses)
         affiliation.delete()
+        publish_affiliation_removed(da.org_id, entity.business_identifier)
         entity.set_pass_code_claimed(False)
 
         if entity.corp_type in [CorpType.RTMP.value, CorpType.TMP.value, CorpType.ATMP.value, CorpType.CTMP.value]:

@@ -35,6 +35,7 @@ from auth_api.schemas import ProductCodeSchema
 from auth_api.services.keycloak import KeycloakService
 from auth_api.services.user import User as UserService
 from auth_api.utils.account_mailer import publish_to_mailer
+from auth_api.utils.fga_publisher import publish_product_subscribed, publish_product_unsubscribed
 from auth_api.utils.cache import cache
 from auth_api.utils.constants import BCOL_PROFILE_PRODUCT_MAP
 from auth_api.utils.enums import (
@@ -336,8 +337,11 @@ class Product:
         existing_sub = ProductSubscriptionModel.find_by_org_id_product_code(org_id, product_code)
 
         if existing_sub:
+            was_active = existing_sub.status_code == ProductSubscriptionStatus.ACTIVE.value
             existing_sub.status_code = ProductSubscriptionStatus.INACTIVE.value
             existing_sub.save()
+            if was_active:
+                publish_product_unsubscribed(org_id, product_code)
 
             pending_task = TaskModel.find_by_incomplete_task_relationship_id(
                 relationship_id=existing_sub.id,
@@ -387,14 +391,19 @@ class Product:
     @staticmethod
     def _subscribe_and_publish_activity(request: SubscriptionRequest):
         subscription = None
+        was_active = False
         if request.inactive_sub:
             subscription = request.inactive_sub
+            was_active = subscription.status_code == ProductSubscriptionStatus.ACTIVE.value
             subscription.status_code = request.status_code
             subscription.flush()
         else:
             subscription = ProductSubscriptionModel(
                 org_id=request.org_id, product_code=request.product_code, status_code=request.status_code
             ).flush()
+
+        if request.status_code == ProductSubscriptionStatus.ACTIVE.value and not was_active:
+            publish_product_subscribed(request.org_id, request.product_code)
 
         if request.publish_activity and request.status_code == ProductSubscriptionStatus.ACTIVE.value:
             ActivityLogPublisher.publish_activity(

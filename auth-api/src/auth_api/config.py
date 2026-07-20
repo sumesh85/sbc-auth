@@ -139,6 +139,13 @@ class _Config:  # pylint: disable=too-few-public-methods
     # PUB/SUB - PUB: account-mailer-dev, auth-event-dev
     ACCOUNT_MAILER_TOPIC = os.getenv("ACCOUNT_MAILER_TOPIC", "account-mailer-dev")
     AUTH_EVENT_TOPIC = os.getenv("AUTH_EVENT_TOPIC", "auth-event-dev")
+    FGA_SYNC_TOPIC = os.getenv("FGA_SYNC_TOPIC", "fga-sync-dev")
+
+    # OpenFGA
+    OPENFGA_API_URL = os.getenv("OPENFGA_API_URL", "http://localhost:8081")
+    OPENFGA_STORE_ID = os.getenv("OPENFGA_STORE_ID")
+    OPENFGA_MODEL_ID = os.getenv("OPENFGA_MODEL_ID")
+    OPENFGA_API_TOKEN = os.getenv("OPENFGA_API_TOKEN")
 
     ACCOUNT_MAILER_BUCKET = os.getenv("ACCOUNTS_BUCKET", "auth-accounts-dev")
 

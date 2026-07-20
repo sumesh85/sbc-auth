@@ -35,6 +35,7 @@ from auth_api.schemas import InvitationSchema
 from auth_api.services.task import Task
 from auth_api.services.user import User as UserService
 from auth_api.utils.account_mailer import publish_to_mailer
+from auth_api.utils.fga_publisher import publish_membership_activated
 from auth_api.utils.constants import GROUP_GOV_ACCOUNT_USERS
 from auth_api.utils.enums import (
     AccessType,
@@ -446,6 +447,13 @@ class Invitation:
                     org_model, login_source, membership_model, user.verified
                 )
                 membership_model.save()
+
+                if membership_model.status == Status.ACTIVE.value and user.keycloak_guid:
+                    publish_membership_activated(
+                        membership_model.org_id,
+                        str(user.keycloak_guid),
+                        membership_model.membership_type.code,
+                    )
 
                 Invitation._publish_activity_if_active(membership_model, user_from_context)
 

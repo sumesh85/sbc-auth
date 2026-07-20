@@ -1,0 +1,111 @@
+name: sbc-auth authorization model tests
+
+# Model file this test suite runs against.
+model_file: ./model.fga
+
+# Baseline tuples represent the persisted state written by fga-sync.
+# Contextual tuples on individual tests represent realm-role escalation from the JWT.
+tuples:
+  # Alice is an ADMIN of source-org 100 with entity BC0000001 affiliated.
+  - user: user:alice
+    relation: admin
+    object: org:100
+  - user: org:100
+    relation: affiliated_org
+    object: entity:BC0000001
+
+  # Bob is a COORDINATOR of the same source-org 100.
+  - user: user:bob
+    relation: coordinator
+    object: org:100
+
+  # Carol is a BASIC USER of source-org 100.
+  - user: user:carol
+    relation: basic_member
+    object: org:100
+
+  # Vendor org 200 is linked to source-org 100 (linking-key ACTIVE).
+  # Dave is a member (admin) of vendor org 200.
+  - user: user:dave
+    relation: admin
+    object: org:200
+  - user: org:200#member
+    relation: delegate
+    object: org:100
+
+  # Erin is not affiliated with anything — used to test staff escalation.
+
+tests:
+  - name: admin of affiliated org can file
+    check:
+      - user: user:alice
+        object: entity:BC0000001
+        assertions:
+          viewer: true
+          filer: true
+
+  - name: coordinator can file
+    check:
+      - user: user:bob
+        object: entity:BC0000001
+        assertions:
+          viewer: true
+          filer: true
+
+  - name: basic user can view but not file
+    check:
+      - user: user:carol
+        object: entity:BC0000001
+        assertions:
+          viewer: true
+          filer: false
+
+  - name: vendor member acts via linking-key delegate
+    check:
+      - user: user:dave
+        object: entity:BC0000001
+        assertions:
+          viewer: true
+          filer: true
+
+  - name: unrelated user has no access
+    check:
+      - user: user:erin
+        object: entity:BC0000001
+        assertions:
+          viewer: false
+          filer: false
+
+  - name: STAFF realm role via contextual tuple grants viewer + filer
+    check:
+      - user: user:erin
+        object: entity:BC0000001
+        context: {}
+        contextual_tuples:
+          - user: user:erin
+            relation: staff
+            object: system:global
+        assertions:
+          viewer: true
+          filer: true
+
+  - name: EXTERNAL_STAFF_READONLY grants viewer but not filer
+    check:
+      - user: user:erin
+        object: entity:BC0000001
+        contextual_tuples:
+          - user: user:erin
+            relation: external_staff_ro
+            object: system:global
+        assertions:
+          viewer: true
+          filer: false
+
+  - name: suspending an org removes access (tuple absent)
+    # Frank was a member of org:999 but the sync deleted his tuple on SUSPENDED.
+    check:
+      - user: user:frank
+        object: entity:BC9999999
+        assertions:
+          viewer: false
+          filer: false

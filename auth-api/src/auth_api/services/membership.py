@@ -31,10 +31,16 @@ from auth_api.models import Membership as MembershipModel
 from auth_api.models import MembershipStatusCode as MembershipStatusCodeModel
 from auth_api.models import MembershipType as MembershipTypeModel
 from auth_api.models import Org as OrgModel
+from auth_api.models import User as UserModel
 from auth_api.models.dataclass import Activity
 from auth_api.schemas import MembershipSchema
 from auth_api.utils.account_mailer import publish_to_mailer
 from auth_api.utils.auth_event_publisher import publish_team_member_event
+from auth_api.utils.fga_publisher import (
+    publish_membership_activated,
+    publish_membership_deactivated,
+    publish_membership_role_changed,
+)
 from auth_api.utils.constants import GROUP_CONTACT_CENTRE_STAFF, GROUP_MAXIMUS_STAFF, GROUP_SBC_STAFF
 from auth_api.utils.enums import ActivityAction, LoginSource, NotificationType, OrgStatus, OrgType, Status
 from auth_api.utils.roles import ADMIN, ALLOWED_READ_ROLES, COORDINATOR, STAFF
@@ -261,12 +267,25 @@ class Membership:  # pylint: disable=too-many-instance-attributes,too-few-public
         ):
             raise BusinessException(Error.CHANGE_ROLE_FAILED_ONLY_OWNER, None)
 
+        previous_role = self._model.membership_type.code
+        previous_status = self._model.status
+
         for key, value in updated_fields.items():
             if value is not None:
                 setattr(self._model, key, value)
         self._model.save()
 
         membership_type = updated_fields.get("membership_type") or self._model.membership_type.code
+        new_role = self._model.membership_type.code
+        user_guid = self._model.user.keycloak_guid
+
+        if updated_membership_status and updated_membership_status.id == Status.ACTIVE.value and previous_status != Status.ACTIVE.value:
+            publish_membership_activated(self._model.org_id, user_guid, new_role)
+        elif updated_membership_status and updated_membership_status.id == Status.INACTIVE.value and previous_status == Status.ACTIVE.value:
+            publish_membership_deactivated(self._model.org_id, user_guid, previous_role)
+        elif previous_role != new_role and self._model.status == Status.ACTIVE.value:
+            publish_membership_role_changed(self._model.org_id, user_guid, previous_role, new_role)
+
         if updated_membership_status and updated_membership_status.id in [Status.INACTIVE.value, Status.ACTIVE.value]:
             action = (
                 ActivityAction.APPROVE_TEAM_MEMBER.value
@@ -316,9 +335,11 @@ class Membership:  # pylint: disable=too-many-instance-attributes,too-few-public
         if self._model.membership_type_code == ADMIN:
             check_auth(org_id=self._model.org_id, one_of_roles=(ADMIN))  # pylint: disable=superfluous-parens
 
+        previous_role = self._model.membership_type_code
         self._model.membership_status = MembershipStatusCodeModel.get_membership_status_by_code("INACTIVE")
         current_app.logger.info(f"<deactivate_membership for {self._model.user.username}")
         self._model.save()
+        publish_membership_deactivated(self._model.org_id, self._model.user.keycloak_guid, previous_role)
         # Remove from account_holders group in keycloak
         Membership._add_or_remove_group(self._model)
         name = {"first_name": self._model.user.firstname, "last_name": self._model.user.lastname}
@@ -402,9 +423,13 @@ class Membership:  # pylint: disable=too-many-instance-attributes,too-few-public
     def create_admin_membership_for_api_user(org_id, user_id):
         """Create a membership for an api user."""
         current_app.logger.info(f"Creating membership in {org_id} for API user {user_id}")
-        return MembershipModel(
+        membership = MembershipModel(
             org_id=org_id, user_id=user_id, membership_type_code=ADMIN, status=Status.ACTIVE.value
         ).save()
+        user = UserModel.query.get(user_id)
+        if user and user.keycloak_guid:
+            publish_membership_activated(org_id, str(user.keycloak_guid), ADMIN)
+        return membership
 
     @staticmethod
     def has_nsf_or_suspended_membership(user_id):

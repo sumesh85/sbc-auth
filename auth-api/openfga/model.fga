@@ -1,0 +1,47 @@
+model
+  schema 1.1
+
+# Realm-role escalation container.
+# Populated per-request via contextual tuples derived from the JWT.
+# Nothing here is persisted.
+type system
+  relations
+    define staff: [user]
+    define staff_admin: [user]
+    define system_account: [user]
+    define external_staff_ro: [user]
+    define gov_account_user: [user]
+
+type user
+
+# Membership types map to individual relations.
+# USER (from Membership.membership_type_code) → basic_member to avoid clashing with the user type.
+type org
+  relations
+    define admin: [user]
+    define coordinator: [user]
+    define basic_member: [user]
+    define member: admin or coordinator or basic_member
+    # Linking-key delegation: vendor org members act via the source org.
+    define delegate: [org#member]
+
+# ProductSubscription: presence of the tuple = ACTIVE subscription.
+type product
+  relations
+    define subscribed_org: [org]
+
+# Businesses. Access flows from the affiliated org, from linking-key delegates,
+# or from realm roles via the system:global object.
+type entity
+  relations
+    define affiliated_org: [org]
+    define viewer:
+      member from affiliated_org
+      or delegate from affiliated_org
+      or staff from system:global
+      or external_staff_ro from system:global
+    define filer:
+      admin from affiliated_org
+      or coordinator from affiliated_org
+      or delegate from affiliated_org
+      or staff from system:global

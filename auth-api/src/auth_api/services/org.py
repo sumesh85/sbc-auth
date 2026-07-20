@@ -44,6 +44,7 @@ from auth_api.services.validators.bcol_credentials import validate as bcol_crede
 from auth_api.services.validators.duplicate_org_name import validate as duplicate_org_name_validate
 from auth_api.services.validators.payment_type import validate as payment_type_validate
 from auth_api.utils.account_mailer import publish_to_mailer
+from auth_api.utils.fga_publisher import publish_membership_activated, publish_org_status_change
 from auth_api.utils.enums import (
     AccessType,
     ActivityAction,
@@ -242,6 +243,10 @@ class Org:  # pylint: disable=too-many-public-methods
 
             # Add the user to account_holders group
             KeycloakService.join_account_holders_group()
+
+            creator = UserModel.query.get(user_id)
+            if creator and creator.keycloak_guid:
+                publish_membership_activated(org.id, str(creator.keycloak_guid), "ADMIN")
 
     @staticmethod
     def _get_payment_method_descriptions(current_payment_method: str, new_payment_method: str) -> str:
@@ -961,12 +966,15 @@ class Org:  # pylint: disable=too-many-public-methods
 
         user: UserModel = UserModel.find_by_jwt_token()
         org_model = self._model
+        previous_status = org_model.status_code
         org_model.status_code = status_code
         org_model.decision_made_by = user.username  # not sure if a new field is needed for this.
         if status_code == OrgStatus.SUSPENDED.value:
             org_model.suspended_on = datetime.today()
             org_model.suspension_reason_code = suspension_reason_code
         org_model.save()
+        if previous_status != status_code:
+            publish_org_status_change(org_model.id, status_code)
         if status_code == OrgStatus.SUSPENDED.value:
             suspension_reason_description = (
                 SuspensionReasonCode[suspension_reason_code].value
@@ -997,6 +1005,7 @@ class Org:  # pylint: disable=too-many-public-methods
         if task_action == TaskAction.AFFIDAVIT_REVIEW.value:
             AffidavitService.approve_or_reject(org_id, is_approved, user)
 
+        previous_status = org.status_code
         if is_approved:
             org.status_code = OrgStatus.ACTIVE.value
         else:
@@ -1008,6 +1017,8 @@ class Org:  # pylint: disable=too-many-public-methods
         # TODO Publish to activity stream
 
         org.save()
+        if previous_status != org.status_code:
+            publish_org_status_change(org.id, org.status_code)
         # Find admin email addresses
         admin_emails = UserService.get_admin_emails_for_org(org_id)
         origin_url = current_app.config.get("WEB_APP_URL")
