@@ -1,0 +1,24 @@
+Item,Type,Roles granted,Area,What it enables,Users with (of 5),Notes
+/fas,group,fas_user,FAS (pay-ui),Basic FAS access only,2/5,Redundant - every /fas/* subgroup already grants fas_user
+/fas/Filings_Transactions,group,"fas_view, fas_search, fas_edit, fas_link, fas_transaction, fas_user",FAS (pay-ui),"View/search/edit routing slips; link/unlink slips; add filing transactions to a slip",5/5,
+/fas/Payment_Collection,group,"fas_create, fas_reports, fas_view, fas_search, fas_edit, fas_user",FAS (pay-ui),"Create new routing slips; run the daily report; view/search/edit slips",5/5,
+/fas/NSF_support,group,"fas_void, fas_view, fas_search, fas_edit, fas_user",FAS (pay-ui),"Void routing slips (NSF handling); view/search/edit slips",5/5,
+/fas/fas_refund,group,"fas_refund, fas_user",FAS (pay-ui) / pay-api,"Request a refund on a routing slip or transaction; create refunds in pay-api",1/5,Only yhu
+/fas/Supervisor,group,"fas_refund_approver, fas_void, fas_user",FAS (pay-ui),"Authorize routing slip refunds and write-offs; void slips",3/5,Not yhu or frchen
+/staff/viewer,group,"staff, view, view_accounts",Staff dashboard (auth-web),"Staff dashboard; read-only view of accounts and users",5/5,Already covered by /staff/admin
+/staff/search,group,"search, manage_business, edit, make_payment, staff",Staff dashboard (auth-web),"Business search; add and remove businesses on any account (see Affiliations rows)",5/5,
+/staff/admin,group,"manage_accounts, suspend_accounts, admin_view, edit, make_payment, view_accounts, staff",Account management (auth-web / auth-api),"Full account management: edit accounts, members, invitations, payment settings, account linking keys; suspend accounts",5/5,Broad access for finance staff - worth reviewing
+/staff/account_suspend,group,"suspend_accounts, view_accounts, staff",Account management (auth-web),Suspend and unsuspend accounts,5/5,Redundant - /staff/admin already grants suspend_accounts
+/staff/Assets_Staff,group,"ppr, ppr_staff, mhr, mhr_staff, mhr_register, mhr_transfer_sale, mhr_transfer_death, mhr_transport, mhr_exemption_res, mhr_exemption_non_res, mhr_payment, mhr_staff_activities",PPR / MHR (Assets),"Staff access to PPR and MHR: registrations, transfers (sale and death), transport permits, exemptions, payments",5/5,
+/NameX_Viewer,group,names_viewer,Names (NameX),Read-only access to Name Requests,5/5,Already covered by /NameX_OfficeSupport
+/NameX_OfficeSupport,group,"names_editor, names_viewer",Names (NameX),"Edit Name Requests (cannot approve; names_approver is Examiner/Manager only)",5/5,
+/mhr_search_user,group,Not in access-review data,MHR (Assets),Probably MHR search access (inferred from the name),5/5,Left out of the access review - check in Keycloak
+/ppr_user,group,Not in access-review data,PPR (Assets),Probably PPR user access (inferred from the name),5/5,Left out of the access review - check in Keycloak
+manage_eft,direct role,manage_eft,EFT (pay-ui / pay-api),"EFT section: short names, linking them to accounts, applying EFT payments to statements; EFT tile on the staff dashboard; /orgs/simple account lookup",5/5,
+eft_refund,direct role,eft_refund,EFT (pay-ui / pay-api),Create and view EFT short-name refund requests; receives EFT refund emails,5/5,
+eft_refund_approver,direct role,eft_refund_approver,EFT (pay-ui / pay-api),"Approve or decline pending EFT refunds (cannot approve a refund they created); receives approve/decline emails",3/5,Not yhu or frchen
+fas_correction,direct role,fas_correction,FAS (pay-ui / pay-api),"Set a routing slip to CORRECTION status; shows the ""Edit routing slip"" payment button",3/5,Not yhu or frchen
+view_all_transactions,direct role,view_all_transactions,Transactions (pay-ui / auth-web),View transactions for all products on any account,5/5,
+default-roles-bcregistry,direct role,Keycloak default,Keycloak,Built-in default role every user in the realm gets; controls no feature,5/5,
+Affiliations - add/remove/list,derived (manage_business),manage_business (from /staff/search),Affiliations (auth-api /orgs/{id}/affiliations),"List, search, add and remove businesses on ANY account, not only their own",5/5,Comes from /staff/search
+Affiliations - passcode bypass,derived (staff),staff (from every /staff/* group),Affiliations (auth-api),"Link a business to an account WITHOUT the passcode or SP/GP proprietor-name check; no NR email/phone needed; no affiliation confirmation email is sent",5/5,Comes from any /staff/* group - combined with manage_business means any business can be linked to any account with no check

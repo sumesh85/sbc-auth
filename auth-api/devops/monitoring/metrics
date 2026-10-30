@@ -1,0 +1,118 @@
+AFTER
+
+
+punakkals@Punakkalss-MacBook-Air monitoring % ./load-burst.sh
+
+═══════════════════════════════════════════════
+  Spin-up time under burst  —  auth-api-dev
+  concurrency=64   duration=90s
+═══════════════════════════════════════════════
+
+▶ Baseline (last 1h Cloud Monitoring)
+  (no new cold starts recorded)
+
+▶ Firing burst — 64 concurrent for 90s...
+  Done.
+
+▶ Request summary (from hey)
+  Total requests  : 21758
+  Requests/sec    : 240.7805
+  Avg latency     : 0.2655s
+  Fastest         : 0.1211s  (warm instance)
+  Slowest         : 17.6577s  (cold start wait)
+
+  Cold-start affected (>2s): 67 requests  (0.3%)
+  Max connection time      : 17.4492s  (time to reach new instance)
+  Max response wait        : 13.9539s  (total cold start window)
+
+▶ Full latency distribution
+  (requests in the long tail were waiting for cold instances)
+Response time histogram:
+  0.121 [1]     |
+  1.875 [21690] |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  3.628 [12]    |
+  5.382 [6]     |
+  7.136 [1]     |
+  8.889 [9]     |
+  10.643 [21]   |
+  12.397 [15]   |
+  14.150 [2]    |
+  15.904 [0]    |
+  17.658 [1]    |
+
+
+Latency distribution:
+  10%% in 0.1556 secs
+
+▶ Waiting 90s for Cloud Monitoring to ingest startup data...
+
+▶ Container startup latency (Cloud Monitoring — pure spin-up time)
+  p99=1.17s   avg=1.17s   min=1.17s
+
+  Note: Cloud Monitoring measures container startup only.
+  hey's 'Max response wait' above = startup + queue time.
+
+  Run again after deploying new image to compare.
+═══════════════════════════════════════════════
+
+punakkals@Punakkalss-MacBook-Air monitoring % 
+
+
+
+
+BEFORE
+punakkals@Punakkalss-MacBook-Air monitoring % ./load-burst.sh
+
+═══════════════════════════════════════════════
+  Spin-up time under burst  —  auth-api-dev
+  concurrency=64   duration=90s
+═══════════════════════════════════════════════
+
+▶ Baseline (last 1h Cloud Monitoring)
+  p99=1.28s   avg=1.28s   min=1.28s
+
+▶ Firing burst — 64 concurrent for 90s...
+  Done.
+
+▶ Request summary (from hey)
+  Total requests  : 23560
+  Requests/sec    : 261.2068
+  Avg latency     : 0.2448s
+  Fastest         : 0.1243s  (warm instance)
+  Slowest         : 14.4621s  (cold start wait)
+
+  Cold-start affected (>2s): 49 requests  (0.2%)
+  Max connection time      : 2.7830s  (time to reach new instance)
+  Max response wait        : 14.2872s  (total cold start window)
+
+▶ Full latency distribution
+  (requests in the long tail were waiting for cold instances)
+Response time histogram:
+  0.124 [1]     |
+  1.558 [23510] |■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  2.992 [7]     |
+  4.426 [0]     |
+  5.859 [0]     |
+  7.293 [0]     |
+  8.727 [0]     |
+  10.161 [16]   |
+  11.595 [1]    |
+  13.028 [14]   |
+  14.462 [11]   |
+
+
+Latency distribution:
+  10%% in 0.1529 secs
+
+▶ Waiting 90s for Cloud Monitoring to ingest startup data...
+
+▶ Container startup latency (Cloud Monitoring — pure spin-up time)
+  p99=1.28s   avg=1.28s   min=1.28s
+
+  Note: Cloud Monitoring measures container startup only.
+  hey's 'Max response wait' above = startup + queue time.
+
+  Run again after deploying new image to compare.
+═══════════════════════════════════════════════
+
+punakkals@Punakkalss-MacBook-Air monitoring % 

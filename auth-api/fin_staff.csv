@@ -1,0 +1,23 @@
+item,type,users_with,idir\selinayu,idir\kihamaka,idir\yhu,idir\klcooper,idir\frchen
+status,,,OK,OK,OK,OK,OK
+/fas,group,2/5,No,Yes,No,Yes,No
+/fas/fas_refund,group,1/5,No,No,Yes,No,No
+/fas/Filings_Transactions,group,5/5,Yes,Yes,Yes,Yes,Yes
+/fas/NSF_support,group,5/5,Yes,Yes,Yes,Yes,Yes
+/fas/Payment_Collection,group,5/5,Yes,Yes,Yes,Yes,Yes
+/fas/Supervisor,group,3/5,Yes,Yes,No,Yes,No
+/mhr_search_user,group,5/5,Yes,Yes,Yes,Yes,Yes
+/NameX_OfficeSupport,group,5/5,Yes,Yes,Yes,Yes,Yes
+/NameX_Viewer,group,5/5,Yes,Yes,Yes,Yes,Yes
+/ppr_user,group,5/5,Yes,Yes,Yes,Yes,Yes
+/staff/account_suspend,group,5/5,Yes,Yes,Yes,Yes,Yes
+/staff/admin,group,5/5,Yes,Yes,Yes,Yes,Yes
+/staff/Assets_Staff,group,5/5,Yes,Yes,Yes,Yes,Yes
+/staff/search,group,5/5,Yes,Yes,Yes,Yes,Yes
+/staff/viewer,group,5/5,Yes,Yes,Yes,Yes,Yes
+default-roles-bcregistry,direct role,5/5,Yes,Yes,Yes,Yes,Yes
+eft_refund,direct role,5/5,Yes,Yes,Yes,Yes,Yes
+eft_refund_approver,direct role,3/5,Yes,Yes,No,Yes,No
+fas_correction,direct role,3/5,Yes,Yes,No,Yes,No
+manage_eft,direct role,5/5,Yes,Yes,Yes,Yes,Yes
+view_all_transactions,direct role,5/5,Yes,Yes,Yes,Yes,Yes

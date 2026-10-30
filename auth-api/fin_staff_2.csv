@@ -1,0 +1,17 @@
+item,type,users_with,idir\sbrigel
+status,,,OK
+/fas/Filings_Transactions,group,1/1,Yes
+/fas/NSF_support,group,1/1,Yes
+/fas/Payment_Collection,group,1/1,Yes
+/mhr_search_user,group,1/1,Yes
+/NameX_OfficeSupport,group,1/1,Yes
+/NameX_Viewer,group,1/1,Yes
+/ppr_user,group,1/1,Yes
+/staff/account_suspend,group,1/1,Yes
+/staff/admin,group,1/1,Yes
+/staff/Assets_Staff,group,1/1,Yes
+/staff/search,group,1/1,Yes
+/staff/viewer,group,1/1,Yes
+default-roles-bcregistry,direct role,1/1,Yes
+manage_eft,direct role,1/1,Yes
+view_all_transactions,direct role,1/1,Yes
